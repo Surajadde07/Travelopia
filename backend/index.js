@@ -9,27 +9,41 @@ const app = express();
 require("dotenv").config();
 const PORT = process.env.PORT || 4000;
 
+// Debug logging
+console.log('Environment variables loaded:');
+console.log('PORT:', PORT);
+console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Present' : 'Missing');
+
 // Middleware to parse JSON request bodies
 app.use(express.json());
 
 // Enable CORS with dynamic origin checking
 const corsOptions = {
   origin: function (origin, callback) {
+    console.log('CORS check - Origin:', origin);
+    
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
     
     // Allow localhost for development
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      console.log('CORS: Allowing localhost origin');
       return callback(null, true);
     }
     
     // Allow all Vercel deployments (for development)
     if (origin.includes('.vercel.app')) {
+      console.log('CORS: Allowing Vercel deployment');
       return callback(null, true);
     }
     
     // Allow specific frontend URL from environment
     if (origin === process.env.FRONTEND_URL) {
+      console.log('CORS: Allowing specific frontend URL');
       return callback(null, true);
     }
     
@@ -85,6 +99,38 @@ app.use("/api/payment", paymentRoutes);
 // Default route
 app.get("/", (req, res) => {
   res.send(`<h1>THIS IS A HOME PAGE</h1>`);
+});
+
+// Debug route to test API
+app.get("/api/test", (req, res) => {
+  res.json({ 
+    message: "API is working",
+    timestamp: new Date().toISOString(),
+    environment: {
+      PORT: PORT,
+      NODE_ENV: process.env.NODE_ENV,
+      FRONTEND_URL: process.env.FRONTEND_URL
+    }
+  });
+});
+
+// Catch-all route for debugging 404s
+app.use('*', (req, res) => {
+  console.log('404 - Route not found:', req.method, req.originalUrl);
+  res.status(404).json({ 
+    error: 'Route not found',
+    method: req.method,
+    url: req.originalUrl,
+    availableRoutes: [
+      'GET /',
+      'GET /api/test',
+      'POST /api/user/register',
+      'POST /api/user/login',
+      'GET /api/user/dashboard',
+      'POST /api/admin/register',
+      'POST /api/admin/login'
+    ]
+  });
 });
 
 // Start the server
