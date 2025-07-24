@@ -93,7 +93,20 @@ app.use("/uploads", express.static(uploadDir));
 
 // Connect to the database
 const dbConnect = require("./config/database");
-dbConnect();
+
+// Initialize database connection
+const initializeApp = async () => {
+  try {
+    await dbConnect();
+    console.log("Database connected successfully");
+  } catch (error) {
+    console.error("Database connection failed:", error.message);
+    // Continue without database for debugging
+  }
+};
+
+// Call initialize function
+initializeApp();
 
 // Import routes
 const adminRoutes = require("./routes/adminRoutes");
@@ -124,15 +137,21 @@ app.get("/", (req, res) => {
 
 // Debug route to test API
 app.get("/api/test", (req, res) => {
-  res.json({ 
-    message: "API is working",
-    timestamp: new Date().toISOString(),
-    environment: {
-      PORT: PORT,
-      NODE_ENV: process.env.NODE_ENV,
-      FRONTEND_URL: process.env.FRONTEND_URL
-    }
-  });
+  try {
+    res.json({ 
+      message: "API is working",
+      timestamp: new Date().toISOString(),
+      environment: {
+        PORT: PORT,
+        NODE_ENV: process.env.NODE_ENV,
+        FRONTEND_URL: process.env.FRONTEND_URL,
+        DATABASE_CONNECTED: process.env.DATABASE_URL ? 'URL Present' : 'URL Missing'
+      }
+    });
+  } catch (error) {
+    console.error('Error in /api/test:', error);
+    res.status(500).json({ error: 'Internal server error', message: error.message });
+  }
 });
 
 // Catch-all route for debugging 404s
@@ -154,7 +173,20 @@ app.use('*', (req, res) => {
   });
 });
 
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('Global error handler:', error);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: error.message,
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+  });
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`App is listening at http://localhost:${PORT}`);
 });
+
+// Export the app for Vercel
+module.exports = app;
