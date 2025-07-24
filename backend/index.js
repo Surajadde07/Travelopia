@@ -145,12 +145,31 @@ app.get("/api/test", (req, res) => {
         PORT: PORT,
         NODE_ENV: process.env.NODE_ENV,
         FRONTEND_URL: process.env.FRONTEND_URL,
-        DATABASE_CONNECTED: process.env.DATABASE_URL ? 'URL Present' : 'URL Missing'
+        DATABASE_CONNECTED: process.env.DATABASE_URL ? 'URL Present' : 'URL Missing',
+        JWT_SECRET: process.env.JWT_SECRET ? 'Present' : 'Missing'
       }
     });
   } catch (error) {
     console.error('Error in /api/test:', error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
+  }
+});
+
+// Simple login test route
+app.post("/api/test-login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('Test login attempt:', { email, password: '***' });
+    
+    // Test basic functionality
+    res.json({
+      message: "Test login endpoint working",
+      received: { email, passwordLength: password?.length },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error in test-login:', error);
+    res.status(500).json({ error: 'Test login failed', message: error.message });
   }
 });
 
