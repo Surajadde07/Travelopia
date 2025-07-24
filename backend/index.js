@@ -23,7 +23,7 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // Allow Vercel deployments
+    // Allow all Vercel deployments (for development)
     if (origin.includes('.vercel.app')) {
       return callback(null, true);
     }
@@ -33,15 +33,8 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // You can add more specific domains here
-    // const allowedOrigins = [
-    //   'https://your-frontend-domain.com', // Add your custom domain if you have one
-    // ];
-    
-    // if (allowedOrigins.includes(origin)) {
-    //   return callback(null, true);
-    // }
-    
+    // For production, you should be more specific with allowed origins
+    console.log('CORS blocked origin:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
