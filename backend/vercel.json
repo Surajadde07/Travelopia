@@ -11,14 +11,5 @@
       "src": "/(.*)",
       "dest": "/index.js"
     }
-  ],
-  "env": {
-    "PORT": "4000",
-    "DATABASE_URL": "@database-url",
-    "JWT_SECRET": "@jwt-secret",
-    "RAZORPAY_KEY_ID": "@razorpay-key-id",
-    "RAZORPAY_KEY_SECRET": "@razorpay-key-secret",
-    "GEMINI_API_KEY": "@gemini-api-key",
-    "FRONTEND_URL": "@frontend-url"
-  }
+  ]
 }
