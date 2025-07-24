@@ -44,7 +44,7 @@ exports.registerUser = async (req, res) => {
             email: user.email,
             phone: user.phone,
             gender: user.gender,
-            token: generateToken(user._id, 'user')
+            token: generateToken(user._id) // Fixed: removed second parameter
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -58,6 +58,7 @@ exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
+        // Check if user exists
         const user = await User.findOne({ email });
 
         if (user && (await bcrypt.compare(password, user.password))) {
@@ -65,12 +66,13 @@ exports.loginUser = async (req, res) => {
                 _id: user._id,
                 username: user.username,
                 email: user.email,
-                token: generateToken(user._id, 'user')
+                token: generateToken(user._id) // Fixed: removed second parameter
             });
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
         }
     } catch (error) {
+        console.error('Login error:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -181,7 +183,7 @@ exports.registerAdmin = async (req, res) => {
             _id: admin._id,
             adminName: admin.adminName,
             email: admin.email,
-            token: generateToken(admin._id, 'admin'),
+            token: generateToken(admin._id), // Fixed: removed second parameter
             password
         });
     } catch (error) {
@@ -228,7 +230,7 @@ exports.loginAdmin = async (req, res) => {
                 _id: admin._id,
                 adminName: admin.adminName,
                 email: admin.email,
-                token: generateToken(admin._id, 'admin')
+                token: generateToken(admin._id) // Fixed: removed second parameter
             });
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
