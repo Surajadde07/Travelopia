@@ -58,6 +58,19 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Additional CORS headers for debugging
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -95,6 +108,14 @@ app.use("/api/user", userRoutes);
 app.use("/api/routes", routes);
 app.use("/api/moments", momentRoutes);
 app.use("/api/payment", paymentRoutes);
+
+// Log all registered routes
+console.log('Registered routes:');
+console.log('- /api/admin/* (admin routes)');
+console.log('- /api/user/* (user routes)');
+console.log('- /api/routes/* (general routes)');
+console.log('- /api/moments/* (moment routes)');
+console.log('- /api/payment/* (payment routes)');
 
 // Default route
 app.get("/", (req, res) => {
