@@ -9,67 +9,11 @@ const app = express();
 require("dotenv").config();
 const PORT = process.env.PORT || 4000;
 
-// Debug logging
-console.log('Environment variables loaded:');
-console.log('PORT:', PORT);
-console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
-console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Present' : 'Missing');
-
 // Middleware to parse JSON request bodies
 app.use(express.json());
 
-// Enable CORS with dynamic origin checking
-const corsOptions = {
-  origin: function (origin, callback) {
-    console.log('CORS check - Origin:', origin);
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('CORS: Allowing request with no origin');
-      return callback(null, true);
-    }
-    
-    // Allow localhost for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      console.log('CORS: Allowing localhost origin');
-      return callback(null, true);
-    }
-    
-    // Allow all Vercel deployments (for development)
-    if (origin.includes('.vercel.app')) {
-      console.log('CORS: Allowing Vercel deployment');
-      return callback(null, true);
-    }
-    
-    // Allow specific frontend URL from environment
-    if (origin === process.env.FRONTEND_URL) {
-      console.log('CORS: Allowing specific frontend URL');
-      return callback(null, true);
-    }
-    
-    // For production, you should be more specific with allowed origins
-    console.log('CORS blocked origin:', origin);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-
-app.use(cors(corsOptions));
-
-// Additional CORS headers for debugging
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+// Enable CORS
+app.use(cors());
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, "uploads");
@@ -93,20 +37,7 @@ app.use("/uploads", express.static(uploadDir));
 
 // Connect to the database
 const dbConnect = require("./config/database");
-
-// Database connection middleware - ensure connection before processing requests
-app.use(async (req, res, next) => {
-  try {
-    await dbConnect();
-    next();
-  } catch (error) {
-    console.error("Database connection failed for request:", error.message);
-    res.status(503).json({ 
-      error: 'Database connection failed', 
-      message: 'Unable to connect to database. Please try again later.' 
-    });
-  }
-});
+dbConnect();
 
 // Import routes
 const adminRoutes = require("./routes/adminRoutes");
@@ -122,90 +53,12 @@ app.use("/api/routes", routes);
 app.use("/api/moments", momentRoutes);
 app.use("/api/payment", paymentRoutes);
 
-// Log all registered routes
-console.log('Registered routes:');
-console.log('- /api/admin/* (admin routes)');
-console.log('- /api/user/* (user routes)');
-console.log('- /api/routes/* (general routes)');
-console.log('- /api/moments/* (moment routes)');
-console.log('- /api/payment/* (payment routes)');
-
 // Default route
 app.get("/", (req, res) => {
   res.send(`<h1>THIS IS A HOME PAGE</h1>`);
-});
-
-// Debug route to test API
-app.get("/api/test", (req, res) => {
-  try {
-    res.json({ 
-      message: "API is working",
-      timestamp: new Date().toISOString(),
-      environment: {
-        PORT: PORT,
-        NODE_ENV: process.env.NODE_ENV,
-        FRONTEND_URL: process.env.FRONTEND_URL,
-        DATABASE_CONNECTED: process.env.DATABASE_URL ? 'URL Present' : 'URL Missing',
-        JWT_SECRET: process.env.JWT_SECRET ? 'Present' : 'Missing'
-      }
-    });
-  } catch (error) {
-    console.error('Error in /api/test:', error);
-    res.status(500).json({ error: 'Internal server error', message: error.message });
-  }
-});
-
-// Simple login test route
-app.post("/api/test-login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    console.log('Test login attempt:', { email, password: '***' });
-    
-    // Test basic functionality
-    res.json({
-      message: "Test login endpoint working",
-      received: { email, passwordLength: password?.length },
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Error in test-login:', error);
-    res.status(500).json({ error: 'Test login failed', message: error.message });
-  }
-});
-
-// Catch-all route for debugging 404s
-app.use('*', (req, res) => {
-  console.log('404 - Route not found:', req.method, req.originalUrl);
-  res.status(404).json({ 
-    error: 'Route not found',
-    method: req.method,
-    url: req.originalUrl,
-    availableRoutes: [
-      'GET /',
-      'GET /api/test',
-      'POST /api/user/register',
-      'POST /api/user/login',
-      'GET /api/user/dashboard',
-      'POST /api/admin/register',
-      'POST /api/admin/login'
-    ]
-  });
-});
-
-// Global error handler
-app.use((error, req, res, next) => {
-  console.error('Global error handler:', error);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: error.message,
-    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-  });
 });
 
 // Start the server
 app.listen(PORT, () => {
   console.log(`App is listening at http://localhost:${PORT}`);
 });
-
-// Export the app for Vercel
-module.exports = app;
