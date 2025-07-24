@@ -2,25 +2,47 @@ const mongoose = require("mongoose");
 
 require("dotenv").config();
 
+let cachedConnection = null;
+
 const dbConnect = async () => {
     try {
-        // For serverless environments, we don't want to exit the process on error
-        if (mongoose.connections[0].readyState) {
-            console.log("Already connected to MongoDB");
-            return;
+        // If we already have a cached connection, use it
+        if (cachedConnection && mongoose.connection.readyState === 1) {
+            console.log("Using cached database connection");
+            return cachedConnection;
         }
 
-        await mongoose.connect(process.env.DATABASE_URL, {
-            // Remove deprecated options
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-            socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+        // For serverless, we need to handle existing connections properly
+        if (mongoose.connection.readyState === 1) {
+            console.log("Already connected to MongoDB");
+            cachedConnection = mongoose.connection;
+            return cachedConnection;
+        }
+
+        // Close any existing connections that might be hanging
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.disconnect();
+        }
+
+        console.log("Creating new database connection...");
+        
+        const connection = await mongoose.connect(process.env.DATABASE_URL, {
+            // Optimized settings for serverless
+            maxPoolSize: 5, // Limit connection pool size
+            serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+            socketTimeoutMS: 10000, // Close sockets after 10 seconds of inactivity
+            bufferMaxEntries: 0, // Disable mongoose's buffering mechanism
+            bufferCommands: false, // Disable mongoose's buffering mechanism
         });
         
-        console.log("DB connection is successful");
+        cachedConnection = connection;
+        console.log("Database connection successful");
+        return connection;
+        
     } catch (error) {
-        console.log("Issue in DB Connection");
-        console.log(error.message);
-        // Don't exit process in serverless environment
+        console.error("Database connection failed:", error.message);
+        // Reset cached connection on error
+        cachedConnection = null;
         throw error;
     }
 }

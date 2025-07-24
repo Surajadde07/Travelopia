@@ -94,19 +94,19 @@ app.use("/uploads", express.static(uploadDir));
 // Connect to the database
 const dbConnect = require("./config/database");
 
-// Initialize database connection
-const initializeApp = async () => {
+// Database connection middleware - ensure connection before processing requests
+app.use(async (req, res, next) => {
   try {
     await dbConnect();
-    console.log("Database connected successfully");
+    next();
   } catch (error) {
-    console.error("Database connection failed:", error.message);
-    // Continue without database for debugging
+    console.error("Database connection failed for request:", error.message);
+    res.status(503).json({ 
+      error: 'Database connection failed', 
+      message: 'Unable to connect to database. Please try again later.' 
+    });
   }
-};
-
-// Call initialize function
-initializeApp();
+});
 
 // Import routes
 const adminRoutes = require("./routes/adminRoutes");
