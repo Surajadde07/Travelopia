@@ -12,8 +12,44 @@ const PORT = process.env.PORT || 4000;
 // Middleware to parse JSON request bodies
 app.use(express.json());
 
-// Enable CORS
-app.use(cors());
+// Enable CORS with dynamic origin checking
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow Vercel deployments
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow specific frontend URL from environment
+    if (origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+    
+    // You can add more specific domains here
+    // const allowedOrigins = [
+    //   'https://your-frontend-domain.com', // Add your custom domain if you have one
+    // ];
+    
+    // if (allowedOrigins.includes(origin)) {
+    //   return callback(null, true);
+    // }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, "uploads");
